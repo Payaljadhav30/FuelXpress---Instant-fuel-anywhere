@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+/*import { useEffect, useState } from "react";
 import LoginLight from "../../../assets/images/loginLight.jpg";
 import {
   AiOutlineMail,
@@ -247,4 +247,123 @@ function Register() {
     </>
   );
 }
+export default Register;
+*/
+
+
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import AuthService from "../../../services/auth.service";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { toast } from "react-toastify";
+
+function Register() {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [owner, setOwner] = useState("");
+  const [phno, setPhno] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+
+  const fuelUser = AuthService.getCurrentFuelStation();
+
+  useEffect(() => {
+    if (fuelUser) navigate("/seller/");
+  }, [fuelUser]);
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    try {
+      await AuthService.fuelStationRegister(name, owner, email, password, phno, {});
+      toast.success("Registration successful!");
+      navigate("/seller/auth/login");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Registration failed");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex justify-center items-center bg-gray-900 p-4">
+      <div className="bg-gray-800 p-10 rounded-2xl shadow-lg w-full max-w-md">
+        <h1 className="text-3xl text-white font-bold mb-4 text-center">Seller Register</h1>
+        <p className="text-gray-300 text-center mb-6">Register with your details</p>
+
+        <form className="flex flex-col gap-4" onSubmit={handleRegister}>
+          <input
+            type="text"
+            placeholder="Station Name"
+            value={name}
+            required
+            onChange={(e) => setName(e.target.value)}
+            className="p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-sky-500"
+          />
+          <input
+            type="text"
+            placeholder="Owner Name"
+            value={owner}
+            required
+            onChange={(e) => setOwner(e.target.value)}
+            className="p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-sky-500"
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            required
+            onChange={(e) => setEmail(e.target.value)}
+            className="p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-sky-500"
+          />
+          <input
+            type="text"
+            placeholder="Phone +91XXXXXXXXXX"
+            value={phno}
+            required
+            minLength={10}
+            maxLength={13}
+            onChange={(e) => setPhno(e.target.value)}
+            className="p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-sky-500"
+          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              minLength={8}
+              value={password}
+              required
+              onChange={(e) => setPassword(e.target.value)}
+              className="p-3 w-full rounded-lg border border-gray-600 focus:outline-none focus:border-sky-500"
+            />
+            {showPassword ? (
+              <AiOutlineEyeInvisible
+                className="absolute right-3 top-3 text-white cursor-pointer"
+                onClick={() => setShowPassword(false)}
+              />
+            ) : (
+              <AiOutlineEye
+                className="absolute right-3 top-3 text-white cursor-pointer"
+                onClick={() => setShowPassword(true)}
+              />
+            )}
+          </div>
+
+          <button className="bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-lg font-semibold mt-2">
+            Sign Up
+          </button>
+
+          <button
+            className="border border-sky-500 text-white py-2 rounded-lg hover:bg-sky-700 mt-2 w-full"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("../login");
+            }}
+          >
+            Already have an account? Login
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default Register;

@@ -1,42 +1,64 @@
-function Card(){
-    const onHandleSubmit = (e)=>{
-        e.preventDefault();
-    }
-    return (
-        <div className="shadow-lg gap-3  rounded m-8 p-8 flex bg-gray-800">
-          <div className="lg: md:flex flex-col gap-3 ">
-            <h3 className="text-orange text-xl font-semibold text-white">{"Profile Update"}</h3>
-           <form onSubmit={onHandleSubmit}>
-           <div>
-            
-            <label htmlFor="current-password">
-                Current Password : 
-            </label><br/>
-            <input id="current-password"/>
+// src/components/user/Profile/Card.js
+function Card() {
+  const onHandleSubmit = (e) => {
+    e.preventDefault();
+  };
 
-           </div>
-           <div>
-            
-            <label htmlFor="new-password">
-                New Password : 
-            </label><br/>
-            <input id="new-password"/>
+  return (
+    <div className="max-w-md w-full bg-gray-900 rounded-xl shadow-lg p-8 m-6 mx-auto">
+      <h3 className="text-2xl font-bold text-orange-500 mb-6 text-center">
+        Profile Update
+      </h3>
 
-           </div>
-           <div>
-            
-            <label htmlFor="confirm-password">
-                Confirm Password : 
-            </label><br/>
-            <input id="confirm-password"/>
-
-           </div>
-            <button className="bg-transparent hover:bg-blue-500 text-blue-700 font-bold hover:text-white py-1  border border-blue-500 hover:border-transparent rounded">
-              Update Password
-            </button>
-            </form>
-          </div>
+      <form onSubmit={onHandleSubmit} className="space-y-5">
+        <div className="flex flex-col">
+          <label htmlFor="current-password" className="text-white font-medium mb-1">
+            Current Password
+          </label>
+          <input
+            id="current-password"
+            type="password"
+            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="Enter current password"
+            required
+          />
         </div>
-      );
+
+        <div className="flex flex-col">
+          <label htmlFor="new-password" className="text-white font-medium mb-1">
+            New Password
+          </label>
+          <input
+            id="new-password"
+            type="password"
+            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="Enter new password"
+            required
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label htmlFor="confirm-password" className="text-white font-medium mb-1">
+            Confirm Password
+          </label>
+          <input
+            id="confirm-password"
+            type="password"
+            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="Confirm new password"
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition"
+        >
+          Update Password
+        </button>
+      </form>
+    </div>
+  );
 }
+
 export default Card;

@@ -135,7 +135,7 @@ export const getStationWithId = async (req, res) => {
 
 export const getMyStations = async (req, res) => {
     try {
-        const ownerId = req.user.id; // ✅ read owner ID from decoded JWT
+        const ownerId = req.user.id; // read owner ID from decoded JWT
         const stations = await Station.find({ owner: ownerId });
 
         res.status(200).json({ stations });

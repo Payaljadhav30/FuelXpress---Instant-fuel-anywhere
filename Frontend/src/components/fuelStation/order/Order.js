@@ -1,97 +1,87 @@
 import LoginLight from "../../../assets/images/loginLight.jpg";
 import { useEffect, useState } from "react";
-import AuthService from "../../../services/auth.service";
 import { useNavigate } from "react-router-dom";
+import AuthService from "../../../services/auth.service";
 import ListOrder from "./ListOrder";
-import {AiOutlineShoppingCart} from "react-icons/ai"
-import {TbTruckDelivery} from "react-icons/tb"
+import { AiOutlineShoppingCart } from "react-icons/ai";
+import { TbTruckDelivery } from "react-icons/tb";
 import { toast } from "react-toastify";
-function Order(){
-    const [orders,setOrders] = useState(null);
-    const navigate = useNavigate();
-    const fuelStation = AuthService.getCurrentFuelStation();
-    const [loading,setLoading] = useState(true);
-    const [countOnWayOrders,setCountOnWayOrders] = useState(0);
-    useEffect(()=>{
-      if(!fuelStation){
-          navigate('/home')
+
+function Order() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [countOnWayOrders, setCountOnWayOrders] = useState(0);
+  const navigate = useNavigate();
+  const fuelStation = AuthService.getCurrentFuelStation();
+
+  // Redirect if no fuel station is logged in
+  useEffect(() => {
+    if (!fuelStation) navigate("/home");
+  }, [fuelStation]);
+
+  // Fetch orders
+  const getOrders = async () => {
+    try {
+      const response = await AuthService.getOrders(fuelStation.stationId);
+      setOrders(response.data);
+      setLoading(false);
+      const onWay = response.data.filter(
+        (o) => !o.isCanceled.status && !o.isDelivered.status
+      ).length;
+      setCountOnWayOrders(onWay);
+
+      if (response.data.length === 0) {
+        toast.warning("There are no orders.");
+        navigate("../");
       }
-      console.log("FuelStation",fuelStation.stationId)
-    },[fuelStation])
-    
-    const getOrders = async () =>{
-        try {
-          await AuthService.getOrders(fuelStation.stationId).then(
-            (response) => {
-                console.log(response)
-                setOrders(response.data)
-                
-            },
-            (error) => {
-              console.log(error.response.data.message);
-            }
-          );
-        } catch (err) {
-          console.log(err);
-        }
-      }
-    useEffect(()=>{
-      setCountOnWayOrders(0)
-    },[])
-
-    useEffect(()=>{
-        getOrders()
-        setLoading(false);
-    },[loading])
-
-
-    const incrementCount = () =>{
-      setCountOnWayOrders(countOnWayOrders + 1)
+    } catch (err) {
+      console.log(err.response || err);
+      toast.error("Failed to fetch orders");
     }
-    const renderedOrders = (orders)?orders.filter((element)=>{
-      const {isAccepted,isCanceled,isDelivered} = element;
-      console.log(element)
-      if(isCanceled.status || isDelivered.status){
-        return null;
-      }
-      return element
-    }).map((element)=>{
-      const {isAccepted,isCanceled,isDelivered} = element;
-      return(
-          <ListOrder order={element} setLoading={setLoading}/>
-      )
-  }):null
-  
-  useEffect(()=>{
-    if(renderedOrders && renderedOrders.length === 0){
-      toast.warning("There are No Order")
-      navigate('../');
-    }
-  },[renderedOrders])
+  };
 
+  useEffect(() => {
+    if (fuelStation) getOrders();
+  }, [fuelStation]);
 
-    const renderedIcon = (countOnWayOrders)?
-    <TbTruckDelivery className=""/>
-    :
-     <AiOutlineShoppingCart className="text-white"/>
-    return(
-        <div
-        className="w-screen h-screen flex flex-col justify-around items-center lg:md:flex-row"
-        style={{
-          backgroundImage: `linear-gradient(45deg,rgba(0,0,0, 0.75),rgba(0,0,0, 0.75)),url(${LoginLight})`,
-          backgroundPosition: `50% 50%`,
-          backgroundSize: `cover`,
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-      <div className="text-white p-3 text-center text-[54px] flex flex-row justify-center items-center gap-3  whitespace-break-spaces font-sans  lg:text-[96px] md:text-[74px] ">
-            {renderedIcon}
-            <h1>Orders</h1>
-          </div>
-      <div className="w-[100%] h-[100%] justify-center lg:w-[75%] lg:w-[75%] items-center flex flex-row flex-wrap overflow-scroll">
-        {renderedOrders}
+  const renderedOrders = orders
+    .filter((o) => !o.isCanceled.status && !o.isDelivered.status)
+    .map((o) => <ListOrder key={o._id} order={o} setLoading={setLoading} />);
+
+  const renderedIcon = countOnWayOrders ? (
+    <TbTruckDelivery className="text-green-400 text-4xl animate-bounce" />
+  ) : (
+    <AiOutlineShoppingCart className="text-white text-4xl" />
+  );
+
+  return (
+    <div
+      className="w-screen h-screen flex flex-col items-center justify-start py-10 px-4 lg:px-16 gap-8"
+      style={{
+        backgroundImage: `linear-gradient(45deg, rgba(0,0,0,0.75), rgba(0,0,0,0.75)), url(${LoginLight})`,
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-4 text-white text-center text-4xl lg:text-6xl font-bold">
+        {renderedIcon}
+        <h1>Orders</h1>
       </div>
+
+      {/* Orders Container */}
+      <div className="w-full lg:w-3/4 flex flex-col gap-6 overflow-auto">
+        {loading ? (
+          <p className="text-white text-center">Loading orders...</p>
+        ) : renderedOrders.length > 0 ? (
+          renderedOrders
+        ) : (
+          <p className="text-white text-center">No active orders available.</p>
+        )}
       </div>
-    )
+    </div>
+  );
 }
+
 export default Order;

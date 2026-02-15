@@ -1,175 +1,91 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import authService from "../../../services/auth.service";
 import OrderPreview from "../../modal/OrderPreview";
-import LeafletMap from "../../LeafletMap"; // Import the LeafletMap component
 
 function ListOrderHistory({ order, setLoading }) {
-  const { address, fuel, isAccepted, isCanceled, isDelivered, method, userId, _id, latitude, longitude } = order;
+  const { fuel, isAccepted, isCanceled, isDelivered, method, userId, _id } = order;
+
   const [showModal, setShowModal] = useState(false);
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    getUserInfo();
-  }, []);
-  
   const [userInfo, setUserInfo] = useState(null);
-  
-  const getUserInfo = async () => {
+
+  // Fetch user info
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const response = await authService.getUserInfo(userId);
+        setUserInfo(response.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchUserInfo();
+  }, [userId]);
+
+  const handleAction = async (actionFn) => {
     try {
-      await authService.getUserInfo(userId).then(
-        (response) => {
-          setUserInfo(response.data);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
+      const response = await actionFn(_id);
+      alert(response.data.message);
+      setLoading(true);
+      setShowModal(false);
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   };
 
-  const cancelOrder = async () => {
-    try {
-      await authService.cancelOrder(_id).then(
-        (response) => {
-          alert(response.data.message);
-          setLoading(true);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
-    } catch (err) {
-      console.log(err);
-    }
+  const renderStatus = () => {
+    if (isCanceled?.status)
+      return <span className="bg-red-600 text-white px-3 py-1 rounded text-sm font-bold">Canceled</span>;
+    if (isDelivered?.status)
+      return <span className="bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">Delivered</span>;
+    if (isAccepted?.status && !isDelivered?.status)
+      return <span className="bg-green-400 text-white px-3 py-1 rounded text-sm font-bold">On The Way</span>;
+    return <span className="bg-yellow-400 text-white px-3 py-1 rounded text-sm font-bold">Pending</span>;
   };
-
-  const deliveryOrder = async () => {
-    try {
-      await authService.deliveryOrder(_id).then(
-        (response) => {
-          alert(response.data.message);
-          setLoading(true);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const acceptOrder = async () => {
-    try {
-      await authService.acceptOrder(_id).then(
-        (response) => {
-          alert(response.data.message);
-          setLoading(true);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const renderedUserInfo = userInfo ? (
-    <>
-      <p className="text-grey-dark font-thin text-sm leading-normal text-white">
-        Name : {userInfo.name}
-        <br />
-        Email : {userInfo.email}
-      </p>
-      <p className="text-grey-dark font-thin text-sm leading-normal text-white">
-        <br />
-        Mobile No : {userInfo.phone}
-      </p>
-    </>
-  ) : null;
-
-  const renderedOrderInfo = (
-    <>
-      <p className="text-grey-dark font-thin text-sm leading-normal text-white">
-        Fuel : <br />
-        {fuel.petrol ? (
-          <>
-            Petrol : Price : {fuel.petrol.price}
-            <br />
-            Quantity: {fuel.petrol.quantity}
-          </>
-        ) : null}
-        {fuel.diesel ? (
-          <>
-            Diesel : Price : {fuel.diesel.price}
-            <br />
-            Quantity: {fuel.diesel.quantity}
-          </>
-        ) : null}
-        <br />
-      </p>
-      <p className="text-grey-dark font-thin text-sm leading-normal text-white">
-        Cost : Rs-{method?.cash ?? method?.online?.amount ?? "N/A"}
-        <br />
-      </p>
-
-      <p className={` ${!isAccepted.status && !isDelivered.status && !isCanceled.status ? " text-yellow-500 font-bold " : "hidden" }`}>
-        Status : Pending
-      </p>
-      <p className={` ${(isAccepted.status && !isDelivered.status) ? " text-[#32CD32] font-bold " : "hidden" }`}>
-        Status : On The Way
-      </p>
-      <p className={` ${(isCanceled.status) ? " text-red-900 font-bold " : "hidden" }`}>
-        Status : Canceled
-      </p>
-      <p className={` ${(isDelivered.status) ? " text-[#32CD32] font-bold " : "hidden" }`}>
-        Status : Delivered
-      </p>
-    </>
-  );
 
   return (
-    <div className="shadow-lg gap-3 rounded m-8 p-8 flex bg-gray-800">
-      <div className="w-full lg: md: flex flex-col gap-3 ">
-        <h3 className="text-orange text-xl font-semibold text-white">{""}</h3>
-        
+    <div className="bg-gray-800 text-white rounded-lg shadow-lg w-full max-w-md h-[32vh] p-4 flex flex-col justify-between hover:shadow-xl transition duration-300">
+      
+      {/* Top: User Info */}
+      {userInfo && (
+        <div className="flex flex-col text-sm text-gray-300 gap-1">
+          <span><strong>Name:</strong> {userInfo.name}</span>
+          <span><strong>Mobile:</strong> {userInfo.phone}</span>
+          <span><strong>Email:</strong> {userInfo.email}</span>
+        </div>
+      )}
 
+      {/* Middle: Fuel & Cost */}
+      <div className="flex flex-col gap-1 text-sm text-gray-300 mt-2">
+        {fuel?.petrol && <span>Petrol: ₹{fuel.petrol.price} — {fuel.petrol.quantity} L</span>}
+        {fuel?.diesel && <span>Diesel: ₹{fuel.diesel.price} — {fuel.diesel.quantity} L</span>}
+        <span>Cost: ₹{method?.cash ?? method?.online?.amount ?? "N/A"}</span>
+      </div>
 
-        {renderedUserInfo}
-        {renderedOrderInfo}
-        <button 
-          className="bg-transparent hover:bg-[#fe6f2b] border-[#fe6f2b] font-bold text-white py-1 border hover:border-transparent rounded" 
-          onClick={() => {
-            setShowModal(true);
-          }}
+      {/* Status */}
+      <div className="mt-2">{renderStatus()}</div>
+
+      {/* Bottom: View Button */}
+      <div className="flex justify-center mt-2">
+        <button
+          className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-1 rounded transition duration-200"
+          onClick={() => setShowModal(true)}
         >
           View
         </button>
-        {showModal ? (
-          <OrderPreview
-            order={order}
-            disable={true}
-            userInfo={userInfo}
-            setOnClose={setShowModal}
-            setOnDelivery={() => {
-              deliveryOrder();
-              setShowModal(false);
-            }}
-            setOnCancel={() => {
-              cancelOrder();
-              setShowModal(false);
-            }}
-            setOnApply={() => {
-              acceptOrder();
-              setShowModal(false);
-            }}
-          />
-        ) : null}
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <OrderPreview
+          order={order}
+          disable={true}
+          userInfo={userInfo}
+          setOnClose={setShowModal}
+          setOnDelivery={() => handleAction(authService.deliveryOrder)}
+          setOnCancel={() => handleAction(authService.cancelOrder)}
+          setOnApply={() => handleAction(authService.acceptOrder)}
+        />
+      )}
     </div>
   );
 }

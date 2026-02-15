@@ -1,179 +1,99 @@
 import { useEffect, useState } from "react";
-import {  useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import authService from "../../../services/auth.service";
 import OrderPreview from "../../modal/OrderPreview";
 import { toast } from "react-toastify";
 
 function ListOrder({ order, setLoading }) {
   const { fuel, isAccepted, isCanceled, isDelivered, method, userId, _id } = order;
+  const [userInfo, setUserInfo] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  useNavigate();
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     getUserInfo();
   }, []);
 
-  const [userInfo, setUserInfo] = useState(null);
-
   const getUserInfo = async () => {
     try {
-      await authService.getUserInfo(userId).then(
-        (response) => {
-          setUserInfo(response.data);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
+      const response = await authService.getUserInfo(userId);
+      setUserInfo(response.data);
     } catch (err) {
-      console.log(err);
+      console.log(err.response || err);
     }
   };
 
-  const cancelOrder = async () => {
+  const handleAction = async (actionFn, successToast) => {
     try {
-      await authService.cancelOrder(_id).then(
-        (response) => {
-          toast.error(response.data.message);
-          setLoading(true);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
+      const response = await actionFn(_id);
+      toast[successToast](response.data.message);
+      setLoading(true);
+      setShowModal(false);
     } catch (err) {
-      console.log(err);
+      console.log(err.response || err);
+      toast.error(err.response?.data?.message || "Something went wrong");
     }
   };
 
-  const deliveryOrder = async () => {
-    try {
-      await authService.deliveryOrder(_id).then(
-        (response) => {
-          toast.success(response.data.message);
-          setLoading(true);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
-    } catch (err) {
-      console.log(err);
-    }
+  const statusLabel = () => {
+    if (isCanceled.status) return "Canceled";
+    if (isDelivered.status) return "Delivered";
+    if (isAccepted.status && !isDelivered.status) return "On The Way";
+    return "Pending";
   };
 
-  const acceptOrder = async () => {
-    try {
-      await authService.acceptOrder(_id).then(
-        (response) => {
-          toast.info(response.data.message);
-          setLoading(true);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const renderedUserInfo = userInfo ? (
-    <>
-      <p className="text-grey-dark font-thin text-sm leading-normal text-white">
-        Name : {userInfo.name}
-      </p>
-      <p className="text-grey-dark font-thin text-sm leading-normal text-white">
-        <br />
-        Mobile No : {userInfo.phone}
-      </p>
-    </>
-  ) : null;
-
-
-  const renderedOrderInfo = (
-    <>
-      <div className="place-self-start">
-        {fuel.petrol ? (
-          <div className="text-sm  text-white font-semibold">
-            <p>Petrol : </p>
-            <p className="text-sm  font-thin">
-              {fuel.petrol.price} ₹/L ( Quantity: {fuel.petrol.quantity} L)
-            </p>
-          </div>
-        ) : null}
-        <br />
-        {fuel.diesel ? (
-          <div className="text-sm   text-white font-semibold">
-            <p>Diesel : </p>
-            <p className="text-sm  font-thin">
-              {fuel.diesel.price} ₹/L ( Quantity: {fuel.diesel.quantity} L)
-            </p>
-          </div>
-        ) : null}
-        <div className="text-sm   text-white  font-semibold">
-          
-          <p className="text-sm   text-white font-thin">
-            Cost : Rs-
-            {method ? (method.cash ? method.cash : method.online?.amount ?? "N/A") : "N/A"}
-          </p>
+  return (
+    <div className="bg-gray-800 rounded-xl shadow-lg p-6 m-4 w-full max-w-xl mx-auto flex flex-col gap-4">
+      {/* User Info */}
+      {userInfo && (
+        <div className="text-white text-sm">
+          <p className="font-semibold">Name: <span className="font-normal">{userInfo.name}</span></p>
+          <p className="font-semibold">Mobile: <span className="font-normal">{userInfo.phone}</span></p>
         </div>
+      )}
+
+      {/* Order Info */}
+      <div className="text-white text-sm">
+        {fuel.petrol && (
+          <p>
+            <span className="font-semibold">Petrol:</span> {fuel.petrol.price} ₹/L (Qty: {fuel.petrol.quantity} L)
+          </p>
+        )}
+        {fuel.diesel && (
+          <p>
+            <span className="font-semibold">Diesel:</span> {fuel.diesel.price} ₹/L (Qty: {fuel.diesel.quantity} L)
+          </p>
+        )}
+        <p>
+          <span className="font-semibold">Cost:</span> {method?.cash ?? method?.online?.amount ?? "N/A"} ₹
+        </p>
+        <p className={`font-bold mt-2 text-sm ${isCanceled.status ? "text-red-600" : "text-green-500"}`}>
+          Status: {statusLabel()}
+        </p>
       </div>
 
-
-      <div className="text-sm font-semibold">
-  <p className={` ${(isAccepted.status && !isDelivered.status) ? " text-[#32CD32] font-bold " : "hidden"}`}>
-    Status : On The Way
-  </p>
-  <p className={` ${(isCanceled.status) ? " text-red-900 font-bold " : "hidden" }`}>
-    Status : Canceled
-  </p>
-  <p className={` ${(isDelivered.status) ? " text-[#32CD32] font-bold " : "hidden" }`}>
-    Status : Delivered
-  </p>
-  {/* Default status for Pending */}
-  <p className={` ${(isAccepted.status || isCanceled.status || isDelivered.status) ? "hidden" :  "  text-red-900 font-bold"}`}>
-    Status : On The Way
-  </p>
-</div>
-
-  
-      <p className="text-grey-dark font-thin text-sm leading-normal text-white"></p>
-    </>
-  );
-  return (
-    <div className={`shadow-lg gap-3  rounded m-8 p-8 flex  ${(isAccepted.status) ? " text-white" : ""} bg-gray-800`}>
-      <div className="w-full lg: md: flex flex-col gap-3 ">
-        {renderedUserInfo}
-        {renderedOrderInfo}
+      {/* Action Buttons */}
+      <div className="flex gap-2 mt-4">
         <button
-          className={`bg-transparent border-[#fe6f2b] hover:border-transparent hover:bg-[#fe6f2b] font-bold text-white py-1  border   rounded `}
-          onClick={() => {
-            setShowModal(true);
-          }}
+          onClick={() => setShowModal(true)}
+          className="flex-1 py-2 px-4 border border-[#fe6f2b] hover:bg-[#fe6f2b] hover:text-white rounded font-bold text-white transition-colors"
         >
           View
         </button>
-        {showModal ? (
-          <OrderPreview
-            order={order}
-            userInfo={userInfo}
-            setOnClose={setShowModal}
-            setOnDelivery={() => {
-              deliveryOrder();
-              setShowModal(false);
-            }}
-            setOnCancel={() => {
-              cancelOrder();
-              setShowModal(false);
-            }}
-            setOnApply={() => {
-              acceptOrder();
-              setShowModal(false);
-            }}
-          />
-        ) : null}
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <OrderPreview
+          order={order}
+          userInfo={userInfo}
+          setOnClose={() => setShowModal(false)}
+          setOnDelivery={() => handleAction(authService.deliveryOrder, "success")}
+          setOnCancel={() => handleAction(authService.cancelOrder, "error")}
+          setOnApply={() => handleAction(authService.acceptOrder, "info")}
+        />
+      )}
     </div>
   );
 }

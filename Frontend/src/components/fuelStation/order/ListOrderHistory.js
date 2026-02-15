@@ -1,167 +1,89 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import authService from "../../../services/auth.service";
 import OrderPreview from "../../modal/OrderPreview";
 
-function ListOrderHistory({ order,setLoading }) {
-  const { fuel, isAccepted,isCanceled,isDelivered,method,userId,_id} = order;
+function ListOrderHistory({ order, setLoading }) {
+  const { fuel, isAccepted, isCanceled, isDelivered, method, userId, _id } = order;
+  const [userInfo, setUserInfo] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  useNavigate();
-  useEffect(()=>{
-    getUserInfo()
-  },[])
-  
-  const [userInfo,setUserInfo] = useState(null);
-  const getUserInfo = async () =>{
+
+  // Fetch user info (optional for user side; can remove if unnecessary)
+  useEffect(() => {
+    const getUserInfo = async () => {
+      try {
+        const response = await authService.getUserInfo(userId);
+        setUserInfo(response.data);
+      } catch (err) {
+        console.log(err.response || err);
+      }
+    };
+    getUserInfo();
+  }, [userId]);
+
+  const handleAction = async (actionFn) => {
     try {
-      await authService.getUserInfo(userId).then(
-        (response) => {
-            setUserInfo(response.data);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
+      const response = await actionFn(_id);
+      alert(response.data.message);
+      setLoading(true);
+      setShowModal(false);
     } catch (err) {
-      console.log(err);
+      console.log(err.response || err);
     }
-  }
+  };
 
-  const cancelOrder = async () =>{
-    try {
-      await authService.cancelOrder(_id).then(
-        (response) => {
-            alert(response.data.message)
-            setLoading(true);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  }
+  // Determine status label
+  const statusLabel = () => {
+    if (isCanceled.status) return { text: "Canceled", color: "text-red-500" };
+    if (isDelivered.status) return { text: "Delivered", color: "text-green-500" };
+    if (isAccepted.status && !isDelivered.status) return { text: "On The Way", color: "text-green-400" };
+    return { text: "Pending", color: "text-yellow-400" };
+  };
 
-  const deliveryOrder = async () =>{
-    try {
-      await authService.deliveryOrder(_id).then(
-        (response) => {
-            alert(response.data.message)
-            setLoading(true);
-
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  const acceptOrder = async () =>{
-    try {
-      await authService.acceptOrder(_id).then(
-        (response) => {
-            alert(response.data.message)
-            setLoading(true);
-        },
-        (error) => {
-          console.log(error.response);
-        }
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  const renderedUserInfo = (userInfo)?   
-    <>
-    <p className="text-grey-dark font-thin text-sm leading-normal text-white">
-    Name : {userInfo.name}
-  <br />
-   Email : {userInfo.email}
-  </p>
-  <p className="text-grey-dark font-thin text-sm leading-normal text-white">
-    <br />
-    Mobile No : {userInfo.phone}
-  </p>
-  <p className="text-grey-dark font-thin text-sm leading-normal text-white">
-  </p>
-  </>
-  :null
-
-  const renderedOrderInfo = <>
-  <div className="place-self-start">
-  {(fuel.petrol)?
-
-                  <div className="text-sm  text-white font-semibold">
-                    <p>Petrol : </p>
-                    <p className="text-sm  font-thin">
-                      {fuel.petrol.price} ₹/L ( Quantity: {fuel.petrol.quantity} L)
-                    </p>
-                  </div>:null}
-                  <br/>
-                  {(fuel.diesel)?
-                  <div className="text-sm   text-white font-semibold">
-                    <p>Diesel : </p>
-                    <p className="text-sm  font-thin">
-                     {fuel.diesel.price} ₹/L ( Quantity: {fuel.diesel.quantity} L)
-                    </p>
-                  </div>:null}
-                  <div className="text-sm   text-white  font-semibold">
-                    <p className="text-sm   text-white font-thin">
-                    Cost : Rs-{(method.cash)?method.cash:method.online.amount}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-sm  font-semibold">
-                <p className={` ${(isAccepted.status && !isDelivered.status)? " text-[#32CD32] font-bold ": "hidden" }`}>
-                      Status : On The Way
-                  </p>
-                  <p className={` ${(isCanceled.status)? " text-red-900 font-bold ": "hidden" }`}>
-                      Status : Canceled
-                  </p>
-                  <p className={` ${(isDelivered.status)? " text-[#32CD32] font-bold ": "hidden" }`}>
-                      Status : Delivered
-                  </p>
-                </div>
-
-<p className="text-grey-dark font-thin text-sm leading-normal text-white">
-</p>
-</>
   return (
-    <div className="shadow-lg gap-3  rounded m-8 p-8 flex bg-gray-800">
-      <div className="w-full lg: md: flex flex-col gap-3 ">
-        <h3 className="text-orange text-xl font-semibold text-white">{""}</h3>
-       {renderedUserInfo}
-       {renderedOrderInfo}
-        <button className="bg-transparent hover:bg-[#fe6f2b] border-[#fe6f2b] font-bold text-white py-1  border  hover:border-transparent rounded" onClick={()=>{
-            setShowModal(true)
-        }}>
+    <div className="bg-gray-800 rounded-lg shadow-md p-4 w-full max-w-xl mx-auto flex flex-col gap-2">
+      
+      {/* Fuel Info */}
+      <div className="text-white text-sm">
+        {fuel.petrol && (
+          <p>
+            <span className="font-semibold">Petrol:</span> {fuel.petrol.price} ₹/L — {fuel.petrol.quantity} L
+          </p>
+        )}
+        {fuel.diesel && (
+          <p>
+            <span className="font-semibold">Diesel:</span> {fuel.diesel.price} ₹/L — {fuel.diesel.quantity} L
+          </p>
+        )}
+        <p>
+          <span className="font-semibold">Total Cost:</span> {method?.cash ?? method?.online?.amount ?? "N/A"} ₹
+        </p>
+        <p className={`font-bold mt-1 ${statusLabel().color}`}>Status: {statusLabel().text}</p>
+      </div>
+
+      {/* Action Button */}
+      <div className="flex justify-end mt-2">
+        <button
+          onClick={() => setShowModal(true)}
+          className="px-3 py-1 border border-orange-500 rounded text-white font-semibold hover:bg-orange-500 transition"
+        >
           View
         </button>
-        {
-            showModal?
-            <OrderPreview order={order} disable={true} userInfo={userInfo} setOnClose={setShowModal} setOnDelivery={()=>{
-                deliveryOrder()
-                setShowModal(false)
-            }}  
-            setOnCancel={()=>{
-                cancelOrder()
-                setShowModal(false)
-            }} 
-            setOnApply={
-              ()=>{
-                acceptOrder()
-                setShowModal(false)
-              }
-            }/>
-            :null
-        }
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <OrderPreview
+          order={order}
+          disable={true}
+          userInfo={userInfo}
+          setOnClose={() => setShowModal(false)}
+          setOnDelivery={() => handleAction(authService.deliveryOrder)}
+          setOnCancel={() => handleAction(authService.cancelOrder)}
+          setOnApply={() => handleAction(authService.acceptOrder)}
+        />
+      )}
     </div>
   );
 }
+
 export default ListOrderHistory;

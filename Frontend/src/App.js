@@ -6,78 +6,90 @@ import Home from "./components/user/home/Home";
 import Order from "./components/user/order/Order";
 import BookOrder from "./components/user/order/BookOrder";
 import Profile from "./components/user/Profile/UpdateProfile";
+import GetStarted from "./components/getStarted/Index";
+import Auth from "./components/user/credentials/Auth";
+import OrderHistory from "./components/user/order/OrderHistory";
+import UserLayout from "./components/user/layout/UserLayout";
 import FuelHome from "./components/fuelStation/home/Home";
 import FuelOrder from "./components/fuelStation/order/Order";
 import FuelOrderHistory from "./components/fuelStation/order/OrderHistory";
 import UpdateProfile from "./components/fuelStation/Profile/UpdateProfile";
-import GetStarted from "./components/getStarted/Index";
-import Auth from "./components/user/credentials/Auth";
+import SellerLayout from "./components/fuelStation/SellerLayout";
 import FuelLogin from "./components/fuelStation/login/Login";
 import FuelRegister from "./components/fuelStation/register/Register";
 import UpdateFuel from "./components/fuelStation/inventory/UpdateFuel";
-import OrderHistory from "./components/user/order/OrderHistory";
 import { toast } from "react-toastify";
 import { useEffect } from "react";
-import 'leaflet/dist/leaflet.css';
+import "leaflet/dist/leaflet.css";
 
+// Logout User
 const LogoutUser = () => {
   const navigate = useNavigate();
-  localStorage.removeItem("user"); 
-  localStorage.removeItem("fuelStation"); 
+  localStorage.removeItem("user");
+  localStorage.removeItem("fuelStation");
   toast.success("Logged Out");
   useEffect(() => {
-    navigate("/user/auth/login"); 
+    navigate("/user/auth/login");
   }, [navigate]);
 };
 
+// Logout Seller
 const LogoutSeller = () => {
   const navigate = useNavigate();
-  localStorage.removeItem("fuelStation"); 
-  localStorage.removeItem("user"); 
+  localStorage.removeItem("fuelStation");
+  localStorage.removeItem("user");
   toast.success("Logged Out");
   useEffect(() => {
-    navigate("/seller/auth/login"); 
+    navigate("/seller/auth/login");
   }, [navigate]);
 };
 
 function App() {
   return (
     <Routes>
-      {/* Get Started Page */}
+      {/* Get Started */}
       <Route path="/" element={<GetStarted />} />
-      
-      {/* User Routes */}
-      <Route path="user">
-        <Route path="auth" element={<Auth />}>
-          <Route path="register" element={<Register />} />
-          <Route path="login" element={<Login />} />
-        </Route>
-        <Route path="logout" element={<LogoutUser />} />
-        <Route path="" element={<Home />} />
+
+      {/* User Auth */}
+      <Route path="user/auth" element={<Auth />}>
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
+      </Route>
+
+      {/* User Pages with Navbar */}
+      <Route path="user" element={<UserLayout />}>
+        <Route index element={<Home />} />
         <Route path="order" element={<Order />} />
         <Route path="bookOrder/:id" element={<BookOrder />} />
         <Route path="Profile" element={<Profile />} />
         <Route path="orderHistory" element={<OrderHistory />} />
+        <Route path="logout" element={<LogoutUser />} />
       </Route>
 
-      {/* Seller Routes */}
-      <Route path="seller">
-        <Route path="auth" element={<Auth />}>
-          <Route path="register" element={<FuelRegister />} />
-          <Route path="login" element={<FuelLogin />} />
-        </Route>
-        <Route path="logout" element={<LogoutSeller />} />
-        <Route path="" element={<FuelHome />} />
+      {/* Seller Auth */}
+      <Route path="seller/auth" element={<Auth />}>
+        <Route path="login" element={<FuelLogin />} />
+        <Route path="register" element={<FuelRegister />} />
+      </Route>
+
+      {/* Seller Pages */}
+      <Route path="seller" element={<SellerLayout />}>
+        <Route index element={<FuelHome />} />
+        <Route path="home" element={<FuelHome />} />
+        <Route path="update-inventory" element={<UpdateFuel />} />
         <Route path="order" element={<FuelOrder />} />
         <Route path="orderHistory" element={<FuelOrderHistory />} />
         <Route path="profile" element={<UpdateProfile />} />
-        <Route path="update-inventory" element={<UpdateFuel />} />
+        <Route path="logout" element={<LogoutSeller />} />
       </Route>
 
-      {/* Map Route */}
+      {/* Map */}
       <Route path="map" element={<SimpleMap lat={12.2} lng={23.4} />} />
     </Routes>
   );
 }
 
 export default App;
+
+
+

@@ -1,193 +1,126 @@
-import { useNavigate } from "react-router-dom";
-import LoginLight from "../../../assets/images/loginLight.jpg";
-import {MdOutlineInventory2} from "react-icons/md"
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { MdOutlineInventory2 } from "react-icons/md";
 import authService from "../../../services/auth.service";
+import LoginLight from "../../../assets/images/loginLight.jpg";
+
 function UpdateFuel() {
-    const [petrolQuantity,setPetrolQuantity] = useState(null);
-    const [petrolPrice,setPetrolPrice] = useState(null);
+  const [petrolQuantity, setPetrolQuantity] = useState("");
+  const [petrolPrice, setPetrolPrice] = useState("");
+  const [dieselQuantity, setDieselQuantity] = useState("");
+  const [dieselPrice, setDieselPrice] = useState("");
+  const navigate = useNavigate();
+  const fuelStation = authService.getCurrentFuelStation();
 
-    const [dieselQuantity,setDieselQuantity] = useState(null);
-    const [dieselPrice,setDieselPrice] = useState(null);
+  useEffect(() => {
+    if (!fuelStation) navigate("../auth/login");
+  }, []);
 
-    const navigate = useNavigate()
-    const fuelStation = authService.getCurrentFuelStation();
-    
-    useEffect(()=>{
-        if(!fuelStation){
-            navigate('../auth/login')
-        }
-    },[])
-    const updateInventory = async () =>{
-      const quantity  = {
-      }
-      
-      if(petrolQuantity){
-        const petrol = {
-          "price" : petrolPrice,
-          "quantity" : petrolQuantity
-        }
-        quantity.petrol = petrol;
-      }
-      if(dieselPrice){
-        const diesel =  {
-          "price" : dieselPrice,
-          "quantity" : dieselQuantity
-        }
-        quantity.diesel = diesel;
-      }
-        try {
-          await authService.fuelInventoryUpdate(quantity,fuelStation.stationId).then(
-            (response) => {
-                toast.success(response.data.message)
-                navigate('../')
-            },
-            (error) => {
-              toast.error(error.response.data.message);
-            }
-          );
-        } catch (err) {
-          console.log(err);
-        }
-      }
-
-    const validation = () =>{
-        if(petrolPrice !== "" && petrolQuantity ==="" ){
-            toast.warning("Please Fill in Petrol Quantity")
-            return false;
-        }
-
-        if(petrolPrice === "" && petrolQuantity !=="" ){
-            toast.warning("Please Fill in Petrol Price")
-            return false;
-        }
-
-        if(dieselPrice !== "" && dieselQuantity ==="" ){
-            toast.warning("Please Fill in Diesel Quantity")
-            return false;
-        }
-
-        if(dieselPrice === "" && dieselQuantity !=="" ){
-            toast.warning("Please Fill in Diesel Price")
-            return false;
-        }
-        return true
+  const validateInputs = () => {
+    if ((petrolPrice && !petrolQuantity) || (!petrolPrice && petrolQuantity)) {
+      toast.warning("Please fill in both Petrol Price and Quantity");
+      return false;
     }
-    const onHandleSubmit = (e) =>{
-        e.preventDefault();
-        const boolean = validation();
-        if(boolean){
-          updateInventory()
-        }
+    if ((dieselPrice && !dieselQuantity) || (!dieselPrice && dieselQuantity)) {
+      toast.warning("Please fill in both Diesel Price and Quantity");
+      return false;
     }
-    useEffect(()=>{
-           
-        },[petrolPrice,petrolQuantity,dieselPrice,dieselQuantity])
+    return true;
+  };
+
+  const updateInventory = async () => {
+    const quantity = {};
+    if (petrolQuantity) quantity.petrol = { price: petrolPrice, quantity: petrolQuantity };
+    if (dieselQuantity) quantity.diesel = { price: dieselPrice, quantity: dieselQuantity };
+    try {
+      const response = await authService.fuelInventoryUpdate(quantity, fuelStation.stationId);
+      toast.success(response.data.message);
+      localStorage.setItem("fuelStock", JSON.stringify({
+      petrol: quantity.petrol?.quantity || 0,
+      diesel: quantity.diesel?.quantity || 0,
+    }));
+      navigate("../");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update");
+    }
+  };
+
+  
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validateInputs()) updateInventory();
+  };
+
   return (
     <div
-      className="w-screen h-screen flex flex-col justify-around items-center lg:md:flex-row"
+      className="w-screen h-screen flex items-center justify-center p-4 bg-gray-900"
       style={{
-        backgroundImage: `linear-gradient(45deg,rgba(0,0,0, 0.75),rgba(0,0,0, 0.75)),url(${LoginLight})`,
-        backgroundPosition: `50% 50%`,
-        backgroundSize: `cover`,
-        backgroundRepeat: "no-repeat",
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(${LoginLight})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       }}
     >
-      <div className="text-white p-3 text-center text-[54px] flex flex-row justify-center items-center gap-3  whitespace-break-spaces font-sans  lg:text-[96px] md:text-[74px] ">
-        <MdOutlineInventory2/>
-        <h1>Stock</h1>
-      </div>
-      <div className="w-[100%] text-white  h-[100%] justify-center gap-5 lg:w-1/2 items-center flex flex-col flex-wrap overflow-scroll">
-        <div className="header">
-          <h1 className="text-center text-[54px]">Update Quantity</h1>
-          <p>Please Fill in the new quantity of Petrol and Diesel</p>
+      <div className="flex flex-col lg:flex-row items-center gap-10 w-full max-w-5xl">
+        {/* Icon & Title */}
+        <div className="flex flex-col items-center text-white gap-4">
+          <MdOutlineInventory2 className="text-5xl text-[#fe6f2b]" />
+          <h1 className="text-3xl lg:text-4xl font-bold">Update Stock</h1>
         </div>
-        <form class="w-full max-w-sm" onSubmit={onHandleSubmit}>
-          <div class="gap-3 md:flex md:items-center mb-6 ">
-            <div class="mb-3 lg:mb-0">
-              <label
-                class="block text-white font-bold md:text-right mb-1 md:mb-0 pr-4"
-                for="inline-petrol"
-              >
-                Petrol 
-              </label>
-            </div>
-            <div class="mb-3 lg:mb-0">
-              <input
-                class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
-                id="inline-petrol"
-                type="number"
-                value={petrolQuantity}
-                
-                onChange={(e)=>{
-                    setPetrolQuantity(e.target.value)
-                }}
-                placeholder="Quantity"
-              />
-            </div>
-            <div class="">
-              <input
-                class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
-                id="inline-petrol"
-                type="number"
-                value={petrolPrice}
-                
-                onChange={(e)=>{
-                    setPetrolPrice(e.target.value)
-                }}
-                placeholder="Price"
-              />
-            </div>
+
+        {/* Form Card */}
+        <form
+          className="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col gap-6"
+          onSubmit={handleSubmit}
+        >
+          <h2 className="text-2xl font-semibold text-white text-center">Update Inventory</h2>
+
+          {/* Petrol Inputs */}
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              type="number"
+              placeholder="Petrol Quantity (L)"
+              value={petrolQuantity}
+              onChange={(e) => setPetrolQuantity(e.target.value)}
+              className="p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-sky-500"
+            />
+            <input
+              type="number"
+              placeholder="Petrol Price (₹/L)"
+              value={petrolPrice}
+              onChange={(e) => setPetrolPrice(e.target.value)}
+              className="p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-sky-500"
+            />
           </div>
-     <div class="gap-3 md:flex md:items-center mb-6 ">
-            <div class="mb-3 lg:mb-0">
-              <label
-                class="block text-white font-bold md:text-right mb-1 md:mb-0 pr-4"
-                for="inline-diesel"
-              >
-                Diesel 
-              </label>
-            </div>
-            <div class="mb-3 lg:mb-0">
-              <input
-                class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
-                id="inline-diesel"
-                type="number"
-                value={dieselQuantity}
-                
-                onChange={(e)=>{
-                    setDieselQuantity(e.target.value)
-                }}
-                placeholder="Quantity"
-              />
-            </div>
-            <div class="">
-              <input
-                class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
-                id="inline-diesel"
-                type="number"
-                value={dieselPrice}
-                
-                onChange={(e)=>{
-                    setDieselPrice(e.target.value)
-                }}
-                placeholder="Price"
-              />
-            </div>
+
+          {/* Diesel Inputs */}
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              type="number"
+              placeholder="Diesel Quantity (L)"
+              value={dieselQuantity}
+              onChange={(e) => setDieselQuantity(e.target.value)}
+              className="p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-sky-500"
+            />
+            <input
+              type="number"
+              placeholder="Diesel Price (₹/L)"
+              value={dieselPrice}
+              onChange={(e) => setDieselPrice(e.target.value)}
+              className="p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-sky-500"
+            />
           </div>
-          <div className="actions flex flex-col gap-4">
-            <button
-              className="bg-[#fe6f2b] hover:bg-[#F59337] text-white font-bold py-2 px-4 rounded-full"
-            >
+
+          {/* Buttons */}
+          <div className="flex gap-4 mt-4">
+            <button className="bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-lg font-semibold flex-1 shadow-md hover:shadow-lg transition">
               Update
             </button>
             <button
-              className="bg-transparent border border-[#fe6f2b] hover:bg-[#F59337] text-white font-bold py-2 px-4 rounded-full"
-              onClick={((e)=>{
-                e.preventDefault();
-                navigate('../')
-              })}
+              type="button"
+              onClick={() => navigate("../")}
+              className="border border-sky-500 text-white py-3 rounded-lg flex-1 hover:bg-sky-700 transition"
             >
               Cancel
             </button>
@@ -197,4 +130,5 @@ function UpdateFuel() {
     </div>
   );
 }
+
 export default UpdateFuel;

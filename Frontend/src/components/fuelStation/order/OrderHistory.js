@@ -1,81 +1,88 @@
-import LoginLight from "../../../assets/images/loginLight.jpg";
 import { useEffect, useState } from "react";
-import AuthService from "../../../services/auth.service";
 import { useNavigate } from "react-router-dom";
-import ListOrderHistory from "./ListOrderHistory";
 import { AiOutlineShoppingCart } from "react-icons/ai";
 import { toast } from "react-toastify";
-function OrderHistory(){
-    const [orders,setOrders] = useState(null);
-    const navigate = useNavigate();
-    const fuelStation = AuthService.getCurrentFuelStation();
-    const [loading,setLoading] = useState(true);
-    useEffect(()=>{
-      if(!fuelStation){
-          navigate('/home')
-      }
-      console.log("FuelStation",fuelStation.stationId)
-    },[fuelStation])
-    
-    const getOrders = async () =>{
-        try {
-          await AuthService.getOrders(fuelStation.stationId).then(
-            (response) => {
-                console.log(response)
-                setOrders(response.data)
-            },
-            (error) => {
-              console.log(error.response.data.message);
-            }
-          );
-        } catch (err) {
-          console.log(err);
-        }
-      }
-    useEffect(()=>{
-        getOrders()
+
+import LoginLight from "../../../assets/images/loginLight.jpg";
+import AuthService from "../../../services/auth.service";
+import ListOrderHistory from "./ListOrderHistory";
+
+function OrderHistory() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
+  const user = AuthService.getCurrentUser();
+
+  // Redirect to home if user not logged in
+  useEffect(() => {
+    if (!user) {
+      navigate("/home");
+    }
+  }, [user, navigate]);
+
+  // Fetch user orders
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await AuthService.getUserOrders(user.userId);
+        setOrders(response.data);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        toast.error("Failed to fetch orders");
+      } finally {
         setLoading(false);
-    },[loading])
-    
-    const renderedOrders = (orders)?orders.filter((element)=>{
-      const {isAccepted,isCanceled,isDelivered} = element;
-      console.log(element)
-      if(!isCanceled.status && !isAccepted.status){
-        return null;
       }
-      return element
-    }).map((element)=>{
-      const {isAccepted,isCanceled,isDelivered} = element;
-      return(
-          <ListOrderHistory order={element} setLoading={setLoading}/>
-      )
-  }):null
+    };
 
-    useEffect(()=>{
-      if(renderedOrders && renderedOrders.length === 0){
-        toast.warning("There are No Past Order")
-        navigate('../');
-      }
-    },[renderedOrders])
+    if (user) fetchOrders();
+  }, [user]);
 
-    return(
-      <div
-      className="w-screen h-screen flex flex-col justify-around items-center lg:md:flex-row"
+  // Filter past orders (delivered or canceled)
+  const pastOrders = orders.filter(
+    (order) => order.isDelivered?.status || order.isCanceled?.status
+  );
+
+  // Notify if no past orders
+  useEffect(() => {
+    if (!loading && pastOrders.length === 0) {
+      toast.warning("No past orders found");
+    }
+  }, [loading, pastOrders]);
+
+  return (
+    <div
+      className="w-screen h-screen flex flex-col items-center bg-cover bg-center"
       style={{
-        backgroundImage: `linear-gradient(45deg,rgba(0,0,0, 0.75),rgba(0,0,0, 0.75)),url(${LoginLight})`,
-        backgroundPosition: `50% 50%`,
-        backgroundSize: `cover`,
-        backgroundRepeat: "no-repeat",
+        backgroundImage: `linear-gradient(45deg, rgba(0, 0, 0, 0.75), rgba(0,0,0,0.75)), url(${LoginLight})`,
       }}
     >
-    <div className="text-white p-3 text-center text-[54px] flex flex-row justify-center items-center gap-3  whitespace-break-spaces font-sans  lg:text-[96px] md:text-[74px] ">
-          <AiOutlineShoppingCart className="text-white"/>
-          <h1>Past Orders</h1>
-        </div>
-    <div className="w-[100%] h-[100%] justify-center lg:w-[50%]  items-center flex flex-row flex-wrap overflow-scroll">
-      {renderedOrders}
+      {/* Page Title */}
+      <div className="text-white mt-8 mb-4 flex items-center gap-3 text-4xl lg:text-6xl font-sans">
+        <AiOutlineShoppingCart className="text-white" />
+        <h1>Past Orders</h1>
+      </div>
+
+      {/* Orders List */}
+      <div className="w-full max-w-3xl max-h-[75vh] overflow-y-auto flex flex-col gap-3 px-4 py-2">
+        {loading ? (
+          <p className="text-white text-lg text-center">Loading orders...</p>
+        ) : pastOrders.length > 0 ? (
+          pastOrders.map((order) => (
+            <ListOrderHistory
+              key={order._id}
+              order={order}
+              setLoading={setLoading}
+            />
+          ))
+        ) : (
+          <p className="text-white text-lg text-center">
+            No past orders to display.
+          </p>
+        )}
+      </div>
     </div>
-    </div>
-    )
+  );
 }
+
 export default OrderHistory;

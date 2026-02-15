@@ -140,6 +140,12 @@ const getUserOrders = (id) => {
   });
 };
 
+// auth.service.js
+export const getFuelInventory = async (stationId) => {
+  return axios.get(`/fuelStation/${stationId}/inventory`); // Adjust URL as per your backend
+};
+
+
 const updateProfilePassword = (userId, password, newPassword) => {
   return axios.put(API_URL + `user/changePassword`, {
     userId,

@@ -5,72 +5,50 @@ import AuthService from "../../../services/auth.service";
 import ListOrderHistory from "./ListOrderHistory";
 
 function OrderHistory() {
-  const [orders, setOrders] = useState(null);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const user = AuthService.getCurrentUser();
 
   useEffect(() => {
-    if (!user) {
-      navigate("/home");
-    }
-  }, [user]);
-
-  // Fetching orders
-  const getOrders = async () => {
-    try {
-      await AuthService.getUserOrders(user.userId).then(
-        (response) => {
-          setOrders(response.data);
-          setLoading(false);
-        },
-        (error) => {
-          console.log(error.response.data.message);
-          setLoading(false);
-        }
-      );
-    } catch (err) {
-      console.log(err);
-      setLoading(false);
-    }
-  };
+    if (!user) navigate("/home");
+  }, [user, navigate]);
 
   useEffect(() => {
-    getOrders();
-  }, []);
-
-  const renderedOrders =
-    orders && orders.length > 0 ? (
-      orders.map((element) => (
-        <ListOrderHistory
-          order={element}
-          setLoading={setLoading}
-          key={element._id}
-        />
-      ))
-    ) : (
-      <p className="text-white text-lg text-center">No orders found.</p>
-    );
+    const fetchOrders = async () => {
+      try {
+        const response = await AuthService.getUserOrders(user.userId);
+        setOrders(response.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [user]);
 
   return (
     <div
-      className="w-screen h-screen flex flex-col justify-around items-center lg:md:flex-row"
+      className="w-screen h-screen flex items-center justify-center px-4"
       style={{
-        backgroundImage: `linear-gradient(45deg, rgba(0,0,0, 0.75), rgba(0,0,0, 0.75)), url(${LoginLight})`,
-        backgroundPosition: `50% 50%`,
-        backgroundSize: `cover`,
+        backgroundImage: `linear-gradient(45deg, rgba(0,0,0,0.75), rgba(0,0,0,0.75)), url(${LoginLight})`,
+        backgroundPosition: "center",
+        backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
       }}
     >
-      <div className="text-white p-3 text-center text-[54px] flex flex-row justify-center items-center gap-3 whitespace-break-spaces font-sans lg:text-[96px] md:text-[74px]">
-        <h1>Past Orders</h1>
-      </div>
+      <div className="flex flex-col items-center gap-6 w-full max-w-3xl h-[80vh] overflow-y-auto py-4">
+        <h1 className="text-white text-4xl font-bold mb-4 text-center">Past Orders</h1>
 
-      <div className="w-[100%] h-[100%] justify-center lg:w-[50%] items-center flex flex-col flex-wrap overflow-scroll">
         {loading ? (
-          <p className="text-white">Loading...</p>
+          <p className="text-white text-center py-4">Loading...</p>
+        ) : orders.length > 0 ? (
+          orders.map((order) => (
+            <ListOrderHistory key={order._id} order={order} setLoading={setLoading} />
+          ))
         ) : (
-          renderedOrders
+          <p className="text-white text-center py-4 text-lg">No orders found.</p>
         )}
       </div>
     </div>

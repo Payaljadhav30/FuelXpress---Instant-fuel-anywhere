@@ -116,20 +116,21 @@ function BookPreview({
                     </div>
                     <div className="flex items-center pl-4 border rounded border-[#F59337]">
                       <input
-                        checked={method?.cash ? true : false}
-                        id="cash"
-                        type="radio"
-                        value="cash"
-                        name="method"
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setMethod({
-                              cash: totalPrice,
-                            });
-                          }
-                        }}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-[#F59337] focus:ring-blue-500"
-                      />
+  id="cash"
+  type="radio"
+  value="cash"
+  name="method"
+  checked={method?.cash !== undefined}
+  onChange={(e) => {
+    if (e.target.checked) {
+      setMethod({
+        cash: totalPrice,
+      });
+    }
+  }}
+  className="w-4 h-4 accent-[#F59337] cursor-pointer"
+/>
+
                       <label
                         htmlFor="cash"
                         className="w-full py-4 ml-2 text-sm font-medium text-gray-900 dark:text-gray-300"
